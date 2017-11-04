@@ -2,22 +2,29 @@ package com.example.joetian.connecttheword;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.location.LocationListener;
 import android.location.Location;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.ActivityCompat;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.*;
 import android.location.LocationManager;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PointOfInterest;
+import android.app.AlertDialog;
 
-public class MapFragment extends Fragment implements OnMapReadyCallback, LocationListener{
+public class MapFragment extends Fragment implements OnMapReadyCallback, LocationListener,
+                                                        GoogleMap.OnPoiClickListener {
 
     private static final long MIN_TIME = 300;
     private static final float MIN_DISTANCE = 1000;
@@ -71,8 +78,38 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                 MIN_TIME, MIN_DISTANCE, this);
 
-        //Initialize the map
-        //MapsInitializer.initialize(this.getActivity());
+        //Initialize the map before performing camera updates
+        MapsInitializer.initialize(this.getActivity());
+    }
+
+    @Override
+    public void onPoiClick(PointOfInterest poi) {
+        CharSequence[] options = new CharSequence[] {"Leave a Drawp", "View Current Drawps"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this.getContext());
+        builder.setTitle(poi.name);
+        builder.setItems(options, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if(which == 0) {
+                    FragmentManager fm = getFragmentManager();
+                    FragmentTransaction ft = fm.beginTransaction();
+                    DrawingFragment dfrag = DrawingFragment.newInstance();
+                    ft.hide(MapFragment.this);
+                    ft.replace(parentFrameHolder, dfrag);
+                    ft.commit();
+                }
+                else {
+                    FragmentManager fm = getFragmentManager();
+                    FragmentTransaction ft = fm.beginTransaction();
+                    BrowsingFragment bfrag = BrowsingFragment.newInstance();
+                    ft.hide(MapFragment.this);
+                    ft.replace(parentFrameHolder, bfrag);
+                    ft.commit();
+                }
+            }
+        });
+        builder.show();
     }
 
     /**
@@ -119,6 +156,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         try {
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
             mMap.setMyLocationEnabled(true);
+            mMap.setOnPoiClickListener(this);
         } catch(SecurityException e) {
             e.printStackTrace();
         }

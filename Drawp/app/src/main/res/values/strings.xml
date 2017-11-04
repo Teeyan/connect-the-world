@@ -2,4 +2,7 @@
     <string name="app_name">ConnectTheWord</string>
     <string name="title_activity_main">Main</string>
     <string name="google_maps_key">AIzaSyC6_jLfZ8yT2ORqSuvyDw8UZyhEXx4CDyI</string>
+
+    <string name="popup_draw_title">Drawp Something!</string>
+    <string name="popup_browse_title">View Drawps</string>
 </resources>
