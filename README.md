@@ -1,5 +1,7 @@
 # connect-the-world
 
+Interact with real world points of interests by leaving drawings you make or viewing ones made by other users!
+
 # Set Up
 
 None! You may need your own GMaps API key in the future but for now you can go ahead and download the apk immediately upon building the project.
