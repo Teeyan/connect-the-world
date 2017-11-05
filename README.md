@@ -12,6 +12,6 @@ Fully scalable voting system.
 
 Polished UI with responsive and fluid Map Interface
 
-#Contact
+# Contact
 
 Reach out to dxtian2@gmail.com for any bugs, questions, or concerns!
