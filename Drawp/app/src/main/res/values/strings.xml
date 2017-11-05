@@ -5,4 +5,6 @@
 
     <string name="popup_draw_title">Drawp Something!</string>
     <string name="popup_browse_title">View Drawps</string>
+
+    <string name="author_browse">Drawped by %s</string>
 </resources>

@@ -4,4 +4,23 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/colorPrimary">
+        <ImageButton
+                android:id="@+id/back_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
+                android:src="@drawable/ic_back"/>
+    </LinearLayout>
+
+    <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+    </android.support.v4.view.ViewPager>
+
 </LinearLayout>

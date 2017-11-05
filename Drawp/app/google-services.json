@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "95644846792",
+    "firebase_url": "https://connect-the-worl-1495596956003.firebaseio.com",
+    "project_id": "connect-the-worl-1495596956003",
+    "storage_bucket": "connect-the-worl-1495596956003.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:95644846792:android:229faf6f839d58d0",
+        "android_client_info": {
+          "package_name": "com.example.joetian.connecttheword"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "95644846792-9pp9ijvm4o39j2s4f2g1u16k6tm6notu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_2HaOavgzG9HAlejTQL0zXzUHnn94_wE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -83,7 +83,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     }
 
     @Override
-    public void onPoiClick(PointOfInterest poi) {
+    public void onPoiClick(final PointOfInterest poi) {
         CharSequence[] options = new CharSequence[] {"Leave a Drawp", "View Current Drawps"};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this.getContext());
@@ -92,17 +92,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if(which == 0) {
+                    /*
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
-                    DrawingFragment dfrag = DrawingFragment.newInstance();
+                    DrawingFragment dfrag = DrawingFragment.newInstance(parentFrameHolder);
                     ft.hide(MapFragment.this);
                     ft.replace(parentFrameHolder, dfrag);
                     ft.commit();
+                    */
                 }
                 else {
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
-                    BrowsingFragment bfrag = BrowsingFragment.newInstance();
+                    BrowsingFragment bfrag = BrowsingFragment.newInstance(parentFrameHolder, "1234");
                     ft.hide(MapFragment.this);
                     ft.replace(parentFrameHolder, bfrag);
                     ft.commit();
