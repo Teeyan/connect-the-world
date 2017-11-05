@@ -24,7 +24,7 @@ import com.squareup.picasso.Picasso;
 
 public class BrowsingFragment extends Fragment {
 
-    private int numDisplay = 10; //number of images to view at a time
+    private int numDisplay; //number of images to view at a time
 
     private PriorityQueue<MetaPage> pqueue; //priority queue to contain meta pages
 
@@ -57,6 +57,7 @@ public class BrowsingFragment extends Fragment {
         super.onCreate(savedInstanceState);
         parentFrameHolder = getArguments().getInt("parent");
         locationId = getArguments().getString("lID");
+        numDisplay = 0;
     }
 
     @Override
@@ -79,6 +80,7 @@ public class BrowsingFragment extends Fragment {
                 ft.commit();
             }
         });
+
         db = FirebaseDatabase.getInstance().getReference();
         pqueue = new PriorityQueue<MetaPage>(20, new MetaPage.MetaPageComparator());
         getLocationInformation(v);
@@ -95,6 +97,7 @@ public class BrowsingFragment extends Fragment {
                     Long numDownvotes = (Long)user.child("num_downvotes").getValue();
                     MetaPage pInstance = new MetaPage(owner, imgURL, numUpvotes.intValue(), numDownvotes.intValue());
                     pqueue.add(pInstance);
+                    numDisplay++;
                     Log.d("RETREIVED DB", owner + "," + imgURL + "," + numUpvotes.toString());
                 }
                 inflater = LayoutInflater.from(getActivity());
@@ -113,7 +116,7 @@ public class BrowsingFragment extends Fragment {
 
         @Override
         public int getCount() {
-            return pqueue.size();
+            return numDisplay;
         }
 
         @Override
@@ -121,18 +124,9 @@ public class BrowsingFragment extends Fragment {
             View page = inflater.inflate(R.layout.browse_page, null);
 
             MetaPage data = pqueue.poll();
-            final ImageView drawing = (ImageView)page.findViewById(R.id.drawing);
-            Storage.getRootRef().child(data.getImgUrl()).getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                @Override
-                public void onSuccess(Uri uri) {
-                    Picasso.with(getActivity()).load(uri).resize(500,500).into(drawing);
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    Log.e("Getting JPG ERROR", exception.getMessage());
-                }
-            });
+            Log.d("DEBUG NEW ENTRY", data.getOwner());
+            ImageView drawing = (ImageView)page.findViewById(R.id.drawing);
+            Picasso.with(getActivity()).load(data.getImgUrl()).resize(500,500).into(drawing);
             TextView imgInfo = (TextView)page.findViewById(R.id.img_info);
             ImageButton upBttn = (ImageButton)page.findViewById(R.id.upvote);
             TextView upNum = (TextView)page.findViewById(R.id.upvote_num);

@@ -27,7 +27,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                                                         GoogleMap.OnPoiClickListener {
 
     private static final long MIN_TIME = 300;
-    private static final float MIN_DISTANCE = 1000;
+    private static final float MIN_DISTANCE = 700;
 
     private MapView mapView; //MapView instance that is displayed in UI
     private GoogleMap mMap; //GoogleMap instance that the view interacts with
@@ -36,6 +36,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
 
     private int parentFrameHolder; //int id of the frame layout the fragment transactions occur in
 
+    private double lastLat = 0;
+    private double lastLong = 0;
+    private int lastZoom = 20;
     /**
      * Set up new instance of map fragment with parent frame holder
      * @param parent int representing id of the frame layout this fragment is being put into
@@ -63,6 +66,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.map_fragment, parent, false);
+        if(savedInstanceState != null) {
+            lastLat = savedInstanceState.getDouble("lat");
+            lastLong = savedInstanceState.getDouble("long");
+        }
         mapView = (MapView)v.findViewById(R.id.user_map);
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
@@ -92,19 +99,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if(which == 0) {
-                    /*
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
-                    DrawingFragment dfrag = DrawingFragment.newInstance(parentFrameHolder);
+                    DrawingFragment dfrag = DrawingFragment.newInstance(parentFrameHolder, poi.placeId,
+                            MainActivity.uID, poi.name);
                     ft.hide(MapFragment.this);
                     ft.replace(parentFrameHolder, dfrag);
                     ft.commit();
-                    */
                 }
                 else {
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
-                    BrowsingFragment bfrag = BrowsingFragment.newInstance(parentFrameHolder, "1234");
+                    BrowsingFragment bfrag = BrowsingFragment.newInstance(parentFrameHolder, poi.placeId);
                     ft.hide(MapFragment.this);
                     ft.replace(parentFrameHolder, bfrag);
                     ft.commit();
@@ -126,6 +132,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     public void onLocationChanged(Location loc) {
         LatLng latlng = new LatLng(loc.getLatitude(), loc.getLongitude());
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latlng, 20);
+        lastLat = loc.getLatitude();
+        lastLong = loc.getLongitude();
         mMap.animateCamera(update);
         locationManager.removeUpdates(this);
     }
@@ -143,6 +151,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
      * Implementation of On Map ReadyCallback abstract methods
      */
 
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putDouble("lat", lastLat);
+        savedInstanceState.putDouble("long", lastLong);
+    }
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -156,6 +170,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         try {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLong), 20));
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
             mMap.setMyLocationEnabled(true);
             mMap.setOnPoiClickListener(this);

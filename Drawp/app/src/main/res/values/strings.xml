@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ConnectTheWord</string>
+    <string name="app_name">ConnectTheWorld</string>
     <string name="title_activity_main">Drawp</string>
     <string name="google_maps_key">AIzaSyC6_jLfZ8yT2ORqSuvyDw8UZyhEXx4CDyI</string>
 
@@ -7,4 +7,15 @@
     <string name="popup_browse_title">View Drawps</string>
 
     <string name="author_browse">Drawped by %s</string>
+
+    <!--Drawing Strings-->
+    <string name="start_new">New</string>
+    <string name="brush">Brush</string>
+    <string name="erase">Erase</string>
+    <string name="upload">Upload</string>
+    <string name="paint">Paint</string>
+
+    <string name="sml">Small</string>
+    <string name="med">Medium</string>
+    <string name="lrg">Large</string>
 </resources>
