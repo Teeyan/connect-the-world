@@ -18,4 +18,14 @@
     <string name="sml">Small</string>
     <string name="med">Medium</string>
     <string name="lrg">Large</string>
+
+    <!--Login Screen Strings-->
+    <string name="email_hint">E-Mail</string>
+    <string name="pass_hint">Password</string>
+    <string name="login_bttn">Login</string>
+    <string name="create_bttn">Create</string>
+
+    <!--Map Fragment Strings-->
+    <string name="map_title">Welcome Back %s!</string>
+
 </resources>

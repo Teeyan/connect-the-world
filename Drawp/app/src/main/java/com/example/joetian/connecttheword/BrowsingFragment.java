@@ -27,6 +27,7 @@ public class BrowsingFragment extends Fragment {
     private int numDisplay; //number of images to view at a time
 
     private PriorityQueue<MetaPage> pqueue; //priority queue to contain meta pages
+    private MetaPage[] drawpList; //MetaPage array for usage with the priority queue
 
     private DatabaseReference db; //database instance for retrieving information
 
@@ -97,9 +98,12 @@ public class BrowsingFragment extends Fragment {
                     Long numDownvotes = (Long)user.child("num_downvotes").getValue();
                     MetaPage pInstance = new MetaPage(owner, imgURL, numUpvotes.intValue(), numDownvotes.intValue());
                     pqueue.add(pInstance);
-                    numDisplay++;
                     Log.d("RETREIVED DB", owner + "," + imgURL + "," + numUpvotes.toString());
                 }
+                Log.d("NUM:","Num Entries Gotten: " + pqueue.size());
+                drawpList = new MetaPage[pqueue.size()];
+                numDisplay = pqueue.size();
+                pqueue.toArray(drawpList);
                 inflater = LayoutInflater.from(getActivity());
                 ViewPager vp = (ViewPager)v.findViewById(R.id.pager);
                 vp.setAdapter(new BrowsePageAdapter());
@@ -123,8 +127,8 @@ public class BrowsingFragment extends Fragment {
         public Object instantiateItem(ViewGroup container, int position) {
             View page = inflater.inflate(R.layout.browse_page, null);
 
-            MetaPage data = pqueue.poll();
-            Log.d("DEBUG NEW ENTRY", data.getOwner());
+            MetaPage data = drawpList[position];
+            Log.d("Processing:", data.getOwner() + " with total " + numDisplay);
             ImageView drawing = (ImageView)page.findViewById(R.id.drawing);
             Picasso.with(getActivity()).load(data.getImgUrl()).resize(500,500).into(drawing);
             TextView imgInfo = (TextView)page.findViewById(R.id.img_info);
@@ -138,7 +142,6 @@ public class BrowsingFragment extends Fragment {
             downNum.setText(String.valueOf(data.getNumDownvotes()));
 
             ((ViewPager)container).addView(page, 0);
-            notifyDataSetChanged();
             return page;
         }
 

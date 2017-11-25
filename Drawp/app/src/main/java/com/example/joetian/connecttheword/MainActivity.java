@@ -39,8 +39,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        MapFragment mfrag = MapFragment.newInstance(R.id.main_frame_holder);
-        ft.replace(R.id.main_frame_holder, mfrag);
+        AuthFragment afrag = AuthFragment.newInstance(R.id.main_frame_holder);
+        ft.replace(R.id.main_frame_holder, afrag);
         ft.commit();
     }
 

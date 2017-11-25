@@ -14,7 +14,9 @@ import android.util.Log;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.*;
 import android.location.LocationManager;
@@ -22,9 +24,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PointOfInterest;
 import android.app.AlertDialog;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback, LocationListener,
                                                         GoogleMap.OnPoiClickListener {
+
+    private FirebaseAuth firebaseAuth;
 
     private static final long MIN_TIME = 300;
     private static final float MIN_DISTANCE = 700;
@@ -35,6 +40,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     private LocationListener listener; //Location listener for verifying position updates
 
     private int parentFrameHolder; //int id of the frame layout the fragment transactions occur in
+    private TextView mapTitle; //title bar text
+    private ImageButton logoutBttn;
 
     private double lastLat = 0;
     private double lastLong = 0;
@@ -61,6 +68,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         super.onCreate(savedInstanceState);
         Log.d("Map:" ,"Entered Map Fragment");
         parentFrameHolder = getArguments().getInt("parent");
+        firebaseAuth = FirebaseAuth.getInstance();
     }
 
     @Override
@@ -79,6 +87,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
 
     @Override
     public void onViewCreated(View v, Bundle savedInstanceState) {
+        //Set title bar
+        mapTitle = (TextView) v.findViewById(R.id.map_header);
+        mapTitle.setText(getString(R.string.map_title, firebaseAuth.getCurrentUser().getDisplayName()));
+
+        //Set up logout functionality
+        logoutBttn = (ImageButton) v.findViewById(R.id.logout);
+        logoutBttn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                logout();
+            }
+        });
 
         //Set up location manager and listener functionality
         locationManager = (LocationManager) this.getActivity().getSystemService(Context.LOCATION_SERVICE);
@@ -102,7 +122,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
                     DrawingFragment dfrag = DrawingFragment.newInstance(parentFrameHolder, poi.placeId,
-                            MainActivity.uID, poi.name);
+                            firebaseAuth.getCurrentUser().getDisplayName(), poi.name);
                     ft.hide(MapFragment.this);
                     ft.replace(parentFrameHolder, dfrag);
                     ft.commit();
@@ -118,6 +138,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             }
         });
         builder.show();
+    }
+
+    /**
+     * Log a user out of the application. Returns to the authentication fragment
+     */
+    private void logout() {
+        firebaseAuth.signOut();
+        FragmentManager fm = getFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        AuthFragment afrag = AuthFragment.newInstance(parentFrameHolder);
+        ft.remove(MapFragment.this);
+        ft.replace(parentFrameHolder, afrag);
+        ft.commit();
     }
 
     /**
