@@ -1,6 +1,7 @@
 package com.example.joetian.connecttheword;
 
 import android.content.pm.PackageManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -9,19 +10,14 @@ import android.support.v4.app.FragmentTransaction;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-
-import java.util.UUID;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
 
-    protected static final String uID = UUID.randomUUID().toString();
-
-    private static final String[] init_perms = {Manifest.permission.ACCESS_COARSE_LOCATION,
+    private static final String[] init_perms = {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.MAPS_RECEIVE};
     private static final int perm_request_code = 420;
@@ -32,9 +28,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_main);
 
         //Handle Permissions
-        if(!hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ||
-                !hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
-                !hasPermission(Manifest.permission.MAPS_RECEIVE)) {
+        if(!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) || !hasPermission(Manifest.permission.MAPS_RECEIVE)) {
             ActivityCompat.requestPermissions(this, init_perms, perm_request_code);
         }
 
@@ -46,7 +40,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch(requestCode) {
             case perm_request_code:
                 if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {

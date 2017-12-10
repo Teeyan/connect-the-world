@@ -6,8 +6,6 @@
     <string name="popup_draw_title">Drawp Something!</string>
     <string name="popup_browse_title">View Drawps</string>
 
-    <string name="author_browse">Drawped by %s</string>
-
     <!--Drawing Strings-->
     <string name="start_new">New</string>
     <string name="brush">Brush</string>
@@ -27,5 +25,11 @@
 
     <!--Map Fragment Strings-->
     <string name="map_title">Welcome Back %s!</string>
+
+    <!--Browsing Fragment Strings-->
+    <string name="author_browse">Drawped by %s</string>
+    <string name="voted">Voted!</string>
+
+    <string name="general">%s</string>
 
 </resources>

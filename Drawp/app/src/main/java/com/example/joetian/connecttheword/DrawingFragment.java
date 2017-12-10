@@ -114,11 +114,9 @@ public class DrawingFragment extends Fragment implements OnClickListener {
         backBttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentManager fm = getFragmentManager();
+                FragmentManager fm = getActivity().getSupportFragmentManager();
                 FragmentTransaction ft = fm.beginTransaction();
-                MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
-                ft.hide(DrawingFragment.this);
-                ft.replace(parentFrameHolder, mfrag);
+                fm.popBackStackImmediate();
                 ft.commit();
             }
         });
@@ -155,11 +153,14 @@ public class DrawingFragment extends Fragment implements OnClickListener {
                             db.child("locations").child(locID).child(uID).child("num_downvotes").setValue(0);
                             db.child("locations").child(locID).child(uID).child("num_upvotes").setValue(0);
 
-                            FragmentManager fm = getFragmentManager();
+                            db.child("users").child(uID).child(locID).child("img_url").setValue(downloadUrl.toString());
+                            db.child("users").child(uID).child(locID).child("num_upvotes").setValue(0);
+                            db.child("users").child(uID).child(locID).child("num_downvotes").setValue(0);
+                            db.child("users").child(uID).child(locID).child("name").setValue(locName);
+
+                            FragmentManager fm = getActivity().getSupportFragmentManager();
                             FragmentTransaction ft = fm.beginTransaction();
-                            MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
-                            ft.hide(DrawingFragment.this);
-                            ft.replace(parentFrameHolder, mfrag);
+                            fm.popBackStackImmediate();
                             ft.commit();
                         }
                     });

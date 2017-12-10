@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -116,7 +117,9 @@ public class AuthFragment extends Fragment{
                             FragmentTransaction ft = fm.beginTransaction();
                             MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
                             ft.hide(AuthFragment.this);
-                            ft.replace(parentFrameHolder, mfrag);
+                            //ft.replace(parentFrameHolder, mfrag, "Map");
+                            ft.add(parentFrameHolder, mfrag, "Map");
+                            ft.addToBackStack(null);
                             ft.commit();
                         }
                         //Error Logging In, display message
@@ -154,13 +157,6 @@ public class AuthFragment extends Fragment{
                                 //Success move to the new ui view
                                 if(task.isSuccessful()) {
                                     setDisplayName(displayName);
-                                    Toast.makeText(getActivity(), "Account Created!", Toast.LENGTH_SHORT).show();
-                                    FragmentManager fm = getFragmentManager();
-                                    FragmentTransaction ft = fm.beginTransaction();
-                                    MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
-                                    ft.hide(AuthFragment.this);
-                                    ft.replace(parentFrameHolder, mfrag);
-                                    ft.commit();
                                 }
                                 //Error creating account, display message
                                 else {
@@ -183,7 +179,18 @@ public class AuthFragment extends Fragment{
     private void setDisplayName(String displayName) {
         UserProfileChangeRequest.Builder builder = new UserProfileChangeRequest.Builder();
         builder.setDisplayName(displayName);
-        firebaseAuth.getCurrentUser().updateProfile(builder.build());
+        firebaseAuth.getCurrentUser().updateProfile(builder.build()).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Toast.makeText(getActivity(), "Account Created!", Toast.LENGTH_SHORT).show();
+                FragmentManager fm = getActivity().getSupportFragmentManager();
+                FragmentTransaction ft = fm.beginTransaction();
+                MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
+                ft.hide(AuthFragment.this);
+                ft.replace(parentFrameHolder, mfrag);
+                ft.commit();
+            }
+        });
     }
 
 }

@@ -6,4 +6,6 @@
     <color name="Red">#DC143C</color>
     <color name="EBlue">#7DF9FF</color>
     <color name="seagreen">#82D4B0</color>
+    <color name="tseagreen">#9F82D4B0</color>
+    <color name="gold">#ffd700</color>
 </resources>

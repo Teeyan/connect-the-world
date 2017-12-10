@@ -1,8 +1,6 @@
 package com.example.joetian.connecttheword;
 
-import android.content.Context;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -11,15 +9,10 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.*;
 import android.support.v4.view.PagerAdapter;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.*;
 import java.util.PriorityQueue;
-import android.net.Uri;
 import com.squareup.picasso.Picasso;
 
 public class BrowsingFragment extends Fragment {
@@ -33,21 +26,24 @@ public class BrowsingFragment extends Fragment {
 
     private int parentFrameHolder;
     private String locationId;
+    private String locationName;
 
     private LayoutInflater inflater;
 
     private ImageButton backBttn;
+    private TextView locationTitle;
 
     /**
      * Set up new instance of browsing fragment with parent frame holder
      * @param parent int representing id of the frame layout this fragment is being put into
      * @return new instance of mapfragment with arguments available
      */
-    public static BrowsingFragment newInstance(int parent, String locId) {
+    public static BrowsingFragment newInstance(int parent, String locId, String locName) {
         BrowsingFragment bfrag = new BrowsingFragment();
         Bundle args = new Bundle();
         args.putInt("parent", parent);
         args.putString("lID", locId);
+        args.putString("name", locName);
         bfrag.setArguments(args);
         return bfrag;
     }
@@ -58,6 +54,7 @@ public class BrowsingFragment extends Fragment {
         super.onCreate(savedInstanceState);
         parentFrameHolder = getArguments().getInt("parent");
         locationId = getArguments().getString("lID");
+        locationName = getArguments().getString("name");
         numDisplay = 0;
     }
 
@@ -73,20 +70,25 @@ public class BrowsingFragment extends Fragment {
         backBttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentManager fm = getFragmentManager();
+                FragmentManager fm = getActivity().getSupportFragmentManager();
                 FragmentTransaction ft = fm.beginTransaction();
-                MapFragment mfrag = MapFragment.newInstance(parentFrameHolder);
-                ft.hide(BrowsingFragment.this);
-                ft.replace(parentFrameHolder, mfrag);
+                fm.popBackStackImmediate();
                 ft.commit();
             }
         });
+
+        locationTitle = (TextView)v.findViewById(R.id.location_title);
+        locationTitle.setText(locationName);
 
         db = FirebaseDatabase.getInstance().getReference();
         pqueue = new PriorityQueue<MetaPage>(20, new MetaPage.MetaPageComparator());
         getLocationInformation(v);
     }
 
+    /**
+     * Extract Location Information pertaining to the POI passed in to this fragment
+     * @param v View instance that this fragment inflates
+     */
     private void getLocationInformation(final View v) {
         db.child("locations").child(locationId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -125,19 +127,114 @@ public class BrowsingFragment extends Fragment {
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            View page = inflater.inflate(R.layout.browse_page, null);
+            final View page = inflater.inflate(R.layout.browse_page, null);
 
-            MetaPage data = drawpList[position];
+            final MetaPage data = drawpList[position];
+            //Get the Drawp
             Log.d("Processing:", data.getOwner() + " with total " + numDisplay);
             ImageView drawing = (ImageView)page.findViewById(R.id.drawing);
             Picasso.with(getActivity()).load(data.getImgUrl()).resize(500,500).into(drawing);
             TextView imgInfo = (TextView)page.findViewById(R.id.img_info);
-            ImageButton upBttn = (ImageButton)page.findViewById(R.id.upvote);
-            TextView upNum = (TextView)page.findViewById(R.id.upvote_num);
-            ImageButton downBttn = (ImageButton)page.findViewById(R.id.downvote);
-            TextView downNum = (TextView)page.findViewById(R.id.downvote_num);
+            //Load the user's profile picture
+            final ImageView userProf = (ImageView)page.findViewById(R.id.profile_picture);
+            db.child("users").child(data.getOwner()).child("profile_url").addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if(dataSnapshot.exists()) {
+                        Picasso.with(getContext()).load(dataSnapshot
+                                .getValue(String.class)).resize(250,250).into(userProf);
+                    }
+                    else {
+                        Picasso.with(getContext()).load(R.drawable.user_icon).resize(250,250).into(userProf);
+                    }
+                }
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e("Error:", databaseError.getMessage());
+                }
+            });
 
-            imgInfo.setText(getString(R.string.author_browse, data.getOwner()));
+            ToggleButton upBttn = (ToggleButton) page.findViewById(R.id.upvote);
+            TextView upNum = (TextView)page.findViewById(R.id.upvote_num);
+            ToggleButton downBttn = (ToggleButton)page.findViewById(R.id.downvote);
+            TextView downNum = (TextView)page.findViewById(R.id.downvote_num);
+            upBttn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton button, boolean isChecked) {
+                    //Setup
+                    ToggleButton upBttn = (ToggleButton)page.findViewById(R.id.upvote);
+                    ToggleButton downBttn = (ToggleButton)page.findViewById(R.id.downvote);
+                    TextView upNum = (TextView) page.findViewById(R.id.upvote_num);
+                    int currUp = data.getNumUpvotes();
+
+                    //Button is now being checked
+                    if(isChecked) {
+                        //Set the View's value
+                        upNum.setText(getString(R.string.general, String.valueOf(currUp + 1)));
+
+                        //Update the db
+                        db.child("locations").child(locationId).child(data.getOwner()).child("num_upvotes").setValue(currUp + 1);
+                        db.child("users").child(data.getOwner()).child(locationId).child("num_upvotes").setValue(currUp + 1);
+
+                        //Handle if the downvote button was previously chosen
+                        if(downBttn.isChecked()) {
+                            TextView downNum = (TextView) page.findViewById(R.id.downvote_num);
+                            downBttn.setChecked(false);
+
+                            int currDown = data.getNumDownvotes();
+                            downNum.setText(getString(R.string.general, String.valueOf(currDown)));
+
+                            db.child("locations").child(locationId).child(data.getOwner()).child("num_downvotes").setValue(currDown);
+                            db.child("users").child(data.getOwner()).child(locationId).child("num_downvotes").setValue(currDown);
+                        }
+                    }
+                    //Button is now being unchecked
+                    else {
+                        upNum.setText(getString(R.string.general, String.valueOf(currUp)));
+
+                        //update the db
+                        db.child("locations").child(locationId).child(data.getOwner()).child("num_upvotes").setValue(currUp);
+                        db.child("users").child(data.getOwner()).child(locationId).child("num_upvotes").setValue(currUp);
+                    }
+                }
+            });
+
+            downBttn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton button, boolean isChecked) {
+                    //Setup
+                    ToggleButton upBttn = (ToggleButton)page.findViewById(R.id.upvote);
+                    ToggleButton downBttn = (ToggleButton)page.findViewById(R.id.downvote);
+                    TextView downNum = (TextView) page.findViewById(R.id.downvote_num);
+                    int currDown = data.getNumDownvotes();
+
+                    //Button is now being checked
+                    if(isChecked) {
+                        downNum.setText(getString(R.string.general, String.valueOf(currDown + 1)));
+                        //Update the db
+                        db.child("locations").child(locationId).child(data.getOwner()).child("num_downvotes").setValue(currDown+1);
+                        db.child("users").child(data.getOwner()).child(locationId).child("num_downvotes").setValue(currDown+1);
+
+                        //Handle if the upvote button was previously chosen
+                        if(upBttn.isChecked()) {
+                            TextView upNum = (TextView)page.findViewById(R.id.upvote_num);
+                            upBttn.setChecked(false);
+                            int currUp = data.getNumUpvotes();
+                            upNum.setText(getString(R.string.general, String.valueOf(currUp)));
+                            //update db
+                            db.child("locations").child(locationId).child(data.getOwner()).child("num_upvotes").setValue(currUp);
+                            db.child("users").child(data.getOwner()).child(locationId).child("num_upvotes").setValue(currUp);
+                        }
+                    }
+                    //Button is now being unchecked
+                    else {
+                        downBttn.setText(getString(R.string.general, String.valueOf(currDown)));
+                        //update db
+                        db.child("locations").child(locationId).child(data.getOwner()).child("num_downvotes").setValue(currDown);
+                        db.child("users").child(data.getOwner()).child(locationId).child("num_downvotes").setValue(currDown);
+                    }
+                }
+            });
+
+            imgInfo.setText(getString(R.string.general, data.getOwner()));
             upNum.setText(String.valueOf(data.getNumUpvotes()));
             downNum.setText(String.valueOf(data.getNumDownvotes()));
 

@@ -50,10 +50,10 @@ public class MetaPage {
     static class MetaPageComparator implements Comparator<MetaPage>{
         public int compare(MetaPage mp1, MetaPage mp2) {
             if(mp1.getNumUpvotes() > mp2.getNumUpvotes()) {
-                return 1;
+                return -1;
             }
             else if(mp1.getNumUpvotes() < mp2.getNumUpvotes()) {
-                return -1;
+                return 1;
             }
             else {
                 return 0;

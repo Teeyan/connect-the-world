@@ -3,49 +3,62 @@ package com.example.joetian.connecttheword;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.location.LocationListener;
 import android.location.Location;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.ActivityCompat;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.PopupMenu;
-import android.widget.TextView;
+import android.app.Activity;
+import android.widget.*;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.*;
 import android.location.LocationManager;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PointOfInterest;
+import com.google.android.gms.maps.model.*;
 import android.app.AlertDialog;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.*;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import android.support.annotation.NonNull;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback, LocationListener,
                                                         GoogleMap.OnPoiClickListener {
 
     private FirebaseAuth firebaseAuth;
 
-    private static final long MIN_TIME = 300;
-    private static final float MIN_DISTANCE = 700;
+    private static final long MIN_TIME = 300;   //time between update query in ms
+    private static final float MIN_DISTANCE = 700;  //min distance travel allowed before update query
+    private static final long  MIN_RADIUS = 100; //min distance allowed to interact with other objects
 
     private MapView mapView; //MapView instance that is displayed in UI
     private GoogleMap mMap; //GoogleMap instance that the view interacts with
     private LocationManager locationManager; //Location Manager instance for tracking user position
     private LocationListener listener; //Location listener for verifying position updates
+    private Circle interactionBound;  //radius bound on POI interaction
+    private Marker currPosMarker;       //marker for current user position
+
+    private Bitmap posMarkerBitmap;     //imageview that holds the image for the currPosMarker
 
     private int parentFrameHolder; //int id of the frame layout the fragment transactions occur in
     private TextView mapTitle; //title bar text
     private ImageButton logoutBttn;
+    private ImageButton profileBttn;
+    private String uID;
 
     private double lastLat = 0;
     private double lastLong = 0;
-    private int lastZoom = 20;
+
     /**
      * Set up new instance of map fragment with parent frame holder
      * @param parent int representing id of the frame layout this fragment is being put into
@@ -69,6 +82,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         Log.d("Map:" ,"Entered Map Fragment");
         parentFrameHolder = getArguments().getInt("parent");
         firebaseAuth = FirebaseAuth.getInstance();
+        uID = firebaseAuth.getCurrentUser().getDisplayName();
     }
 
     @Override
@@ -78,6 +92,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             lastLat = savedInstanceState.getDouble("lat");
             lastLong = savedInstanceState.getDouble("long");
         }
+
         mapView = (MapView)v.findViewById(R.id.user_map);
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
@@ -100,17 +115,83 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             }
         });
 
+        //Set up User Profile functionality
+        profileBttn = (ImageButton) v.findViewById(R.id.profile);
+        profileBttn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                view_profile();
+            }
+        });
+
         //Set up location manager and listener functionality
         locationManager = (LocationManager) this.getActivity().getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                 MIN_TIME, MIN_DISTANCE, this);
 
+        //Get A Default marker and initialize the map
+        Bitmap rawIcon = BitmapFactory.decodeResource(getResources(), R.drawable.user_icon);
+        posMarkerBitmap = Bitmap.createScaledBitmap(rawIcon, 50, 50, true);
         //Initialize the map before performing camera updates
-        MapsInitializer.initialize(this.getActivity());
+        MapsInitializer.initialize(getActivity());
     }
 
+    /**
+     * If the user has a custom marker (profile picture) then we download it in a byte array and conver it into
+     * a bitmap for custom marker use.
+     */
+    public void initializeMarker() {
+        //Load user image
+        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+        db.child("users").child(uID).child("profile_url").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    StorageReference markerRef = FirebaseStorage.getInstance()
+                            .getReferenceFromUrl(dataSnapshot.getValue(String.class));
+
+                    //Set a File Cap for Markers to 3MB
+                    final long THREE_MEGABYTE = 3 * 1024 * 1024;
+                    markerRef.getBytes(THREE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                        @Override
+                        public void onSuccess(byte[] bytes) {
+                            //Set the Custome marker icon
+                            Bitmap rawIcon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                            posMarkerBitmap = Bitmap.createScaledBitmap(rawIcon, 50, 50, true);
+                            currPosMarker.setIcon(BitmapDescriptorFactory.fromBitmap(posMarkerBitmap));
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception exception) {
+                            //Print a DL failure
+                            Toast.makeText(getActivity(), "Custom Marker Failed!", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("DB Request", databaseError.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Handles a POI click as follows:
+     * If the POI is in circle indicator range of the user, generate a menu dialog to make a drawp or view drawps
+     * If the POI is out of range, generate a toast error dialog and do nothing
+     * @param poi - PointOfInterest instance that was clicked by the user
+     */
     @Override
     public void onPoiClick(final PointOfInterest poi) {
+        //Case Where the POI is out of range of the user's indicator
+        if(getDistance(new LatLng(lastLat, lastLong), poi.latLng) > MIN_RADIUS) {
+            Toast.makeText(getContext(), "Out of Range!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //POI is in range, handle accordingly
         CharSequence[] options = new CharSequence[] {"Leave a Drawp", "View Current Drawps"};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this.getContext());
@@ -119,20 +200,22 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if(which == 0) {
-                    FragmentManager fm = getFragmentManager();
+                    FragmentManager fm = getActivity().getSupportFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
                     DrawingFragment dfrag = DrawingFragment.newInstance(parentFrameHolder, poi.placeId,
                             firebaseAuth.getCurrentUser().getDisplayName(), poi.name);
                     ft.hide(MapFragment.this);
-                    ft.replace(parentFrameHolder, dfrag);
+                    ft.add(parentFrameHolder, dfrag);
+                    ft.addToBackStack(null);
                     ft.commit();
                 }
                 else {
                     FragmentManager fm = getFragmentManager();
                     FragmentTransaction ft = fm.beginTransaction();
-                    BrowsingFragment bfrag = BrowsingFragment.newInstance(parentFrameHolder, poi.placeId);
+                    BrowsingFragment bfrag = BrowsingFragment.newInstance(parentFrameHolder, poi.placeId, poi.name);
                     ft.hide(MapFragment.this);
-                    ft.replace(parentFrameHolder, bfrag);
+                    ft.add(parentFrameHolder, bfrag);
+                    ft.addToBackStack(null);
                     ft.commit();
                 }
             }
@@ -145,12 +228,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
      */
     private void logout() {
         firebaseAuth.signOut();
-        FragmentManager fm = getFragmentManager();
+        FragmentManager fm = getActivity().getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         AuthFragment afrag = AuthFragment.newInstance(parentFrameHolder);
         ft.remove(MapFragment.this);
-        ft.replace(parentFrameHolder, afrag);
+        ft.add(parentFrameHolder, afrag);
         ft.commit();
+    }
+
+    /**
+     * Take a user to the profile view
+     */
+    private void view_profile() {
+        FragmentManager fm = getActivity().getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ProfileFragment pfrag = ProfileFragment.newInstance(parentFrameHolder);
+        ft.hide(MapFragment.this);
+        ft.add(parentFrameHolder, pfrag);
+        ft.addToBackStack(null);
+        ft.commit();
+    }
+
+    /**
+     * Get the euclidean distance between the user's current latlng location and a point of interest's latlng location
+     * @param userLoc LatLng object denoting the user's last seen location
+     * @param poiLoc LatLng object denoting the pointofinterest's location
+     */
+    private long getDistance(LatLng userLoc, LatLng poiLoc) {
+        float[] results = new float[1];
+        Location.distanceBetween(userLoc.latitude, userLoc.longitude, poiLoc.latitude, poiLoc.longitude, results);
+        return (long)results[0];
     }
 
     /**
@@ -167,6 +274,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(latlng, 20);
         lastLat = loc.getLatitude();
         lastLong = loc.getLongitude();
+        interactionBound.setCenter(new LatLng(lastLat, lastLong));
+        currPosMarker.setPosition(new LatLng(lastLat, lastLong));
         mMap.animateCamera(update);
         locationManager.removeUpdates(this);
     }
@@ -204,9 +313,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         mMap = googleMap;
         try {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLat, lastLong), 20));
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-            mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            mMap.setMyLocationEnabled(false);
+            mMap.setIndoorEnabled(false);
             mMap.setOnPoiClickListener(this);
+            interactionBound = mMap.addCircle(new CircleOptions()
+                .center(new LatLng(lastLat, lastLong))
+                .radius(MIN_RADIUS)
+                .strokeColor(Color.RED)
+                .fillColor(ContextCompat.getColor(getContext(), R.color.tseagreen))
+            );
+            currPosMarker = mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(lastLat, lastLong))
+                .icon(BitmapDescriptorFactory.fromBitmap(posMarkerBitmap))
+            );
+            initializeMarker();
         } catch(SecurityException e) {
             e.printStackTrace();
         }
