@@ -4,15 +4,15 @@ Interact with real world points of interests by leaving drawings you make or vie
 
 # Set Up
 
-None! You may need your own GMaps API key in the future but for now you can go ahead and download the apk immediately upon building the project.
+None! You can download the entire project or just get the debug apk and throw it onto your Android device. 
 
 # Functionality TODOs
 
-Login screen with GMail or other social media frameworks. 
+DB sanitization for user accounts 
 
-Fully scalable voting system.
+Visualization of nearby users
 
-Polished UI with responsive and fluid Map Interface
+Interaction between user profiles
 
 # Contact
 
